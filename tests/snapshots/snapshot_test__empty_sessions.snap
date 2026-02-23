@@ -1,0 +1,25 @@
+---
+source: tests/snapshot_test.rs
+assertion_line: 136
+expression: output
+---
+ rink  [Sort: Name]  0 sessions  *work ?wait +done
+                                                  
+──────────────────────────────────────────────────
+No tmux sessions found. Press 'c' to create one.  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+ Preview ─────────────────────────────────────────
+(no session selected)                             
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+──────────────────────────────────────────────────
+ ↑↓  nav   Enter  switch   /  search   c  create

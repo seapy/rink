@@ -1,0 +1,25 @@
+---
+source: tests/snapshot_test.rs
+assertion_line: 111
+expression: output
+---
+ rink  [Sort: Name]  6 sessions  *work ?wait +done
+                                                  
+──────────────────────────────────────────────────
+ ▸ personal (2)                                   
+ ▾ work (3)                                       
+   ● api *                                        
+   ○ db                                           
+   ○ frontend                                     
+ ▾ General (1)                                    
+   ○ scratch                                      
+                                                  
+ Preview ─────────────────────────────────────────
+(no session selected)                             
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+──────────────────────────────────────────────────
+ ↑↓  nav   Enter  switch   /  search   c  create

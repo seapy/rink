@@ -1,0 +1,25 @@
+---
+source: tests/snapshot_test.rs
+assertion_line: 129
+expression: output
+---
+ rink  [Sort: Name]  6 sessions  *work ?wait +done
+                                                  
+──────────────────────────────────────────────────
+ ▾ personal (2)                                   
+   ○ blog                                         
+   ○ dotfiles                                     
+ ▾ work (3)                                       
+   ● api *                                        
+   ○ db      ┌ Confirm ──────────────┐            
+   ○ frontend│                       │            
+ ▾ General (1│Kill session           │            
+ Preview ────└───────────────────────┘────────────
+(no preview)                                      
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+──────────────────────────────────────────────────
+ y  confirm   n/Esc  cancel

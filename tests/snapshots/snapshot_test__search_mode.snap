@@ -1,0 +1,25 @@
+---
+source: tests/snapshot_test.rs
+assertion_line: 102
+expression: output
+---
+ rink  [Sort: Name]  6 sessions  *work ?wait +done
+                                                  
+──────────────────────────────────────────────────
+ ▾ work (3)                                       
+   ● api *                                        
+   ○ db                                           
+   ○ frontend                                     
+                                                  
+                                                  
+                                                  
+                                                  
+ Preview ─────────────────────────────────────────
+(no session selected)                             
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+ / work█                                          
+ Enter  confirm   Esc  cancel   Type  to filter

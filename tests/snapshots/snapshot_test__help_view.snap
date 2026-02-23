@@ -1,0 +1,25 @@
+---
+source: tests/snapshot_test.rs
+assertion_line: 119
+expression: output
+---
+ rink  [Sort: Name]  6 sessions  *work ?wait +done
+                                                  
+──────────┌ Help ──────────────────────┐──────────
+ ▾ persona│ Keybindings                │          
+   ○ blog │                            │          
+   ○ dotfi│  ↑/↓ k/j       Navigate up/│          
+ ▾ work (3│  Enter         Switch sessi│          
+   ● api *│  /             Search sessi│          
+   ○ db   │  Tab/←/→       Toggle colla│          
+   ○ front│  r             Refresh sess│          
+ ▾ General│  c             Create sessi│          
+ Preview ─│  x             Kill session│──────────
+(no sessio│  R             Rename sessi│          
+          │  C             Rename categ│          
+          │  s             Cycle sort m│          
+          │  J/K           Reorder (Cus│          
+          │  Esc           Cancel / Unf│          
+          └────────────────────────────┘          
+──────────────────────────────────────────────────
+ Esc/?  close
