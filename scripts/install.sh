@@ -3,35 +3,45 @@ set -e
 
 REPO="seapy/rink"
 INSTALL_DIR="$HOME/.local/bin"
-TMP_DIR=$(mktemp -d)
 
-cleanup() { rm -rf "$TMP_DIR"; }
-trap cleanup EXIT
-
-echo "Installing rink..."
-
-# Check for cargo
-if ! command -v cargo &>/dev/null; then
-  echo "Rust not found. Installing via rustup..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  source "$HOME/.cargo/env"
+# macOS only
+if [[ "$(uname)" != "Darwin" ]]; then
+  echo "Error: rink only supports macOS."
+  exit 1
 fi
 
-# Clone and build
-echo "Cloning $REPO..."
-git clone --depth 1 "https://github.com/$REPO.git" "$TMP_DIR/rink"
+# Detect architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+  arm64)  TARGET="aarch64-apple-darwin" ;;
+  x86_64) TARGET="x86_64-apple-darwin" ;;
+  *)      echo "Error: unsupported architecture: $ARCH"; exit 1 ;;
+esac
 
-echo "Building..."
-cd "$TMP_DIR/rink"
-cargo build --release
+# Get latest release tag
+echo "Fetching latest release..."
+TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | sed 's/.*: "//;s/".*//')
+
+if [[ -z "$TAG" ]]; then
+  echo "Error: could not find latest release."
+  exit 1
+fi
+
+echo "Installing rink $TAG ($TARGET)..."
+
+# Download and extract
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+curl -fsSL "https://github.com/$REPO/releases/download/$TAG/rink-$TARGET.tar.gz" -o "$TMP_DIR/rink.tar.gz"
+tar xzf "$TMP_DIR/rink.tar.gz" -C "$TMP_DIR"
 
 # Install
 mkdir -p "$INSTALL_DIR"
-cp target/release/rink "$INSTALL_DIR/rink"
+cp "$TMP_DIR/rink" "$INSTALL_DIR/rink"
 chmod +x "$INSTALL_DIR/rink"
 
-echo ""
-echo "Installed rink to $INSTALL_DIR/rink"
+echo "Installed rink $TAG to $INSTALL_DIR/rink"
 
 # Check PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
