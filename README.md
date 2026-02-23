@@ -6,6 +6,8 @@ Uses zellij as an outer frame — session list + preview on the left, live tmux 
 
 > macOS only. Inspired by [nacyot/muxdash](https://github.com/nacyot/muxdash).
 
+<img width="2296" height="1418" alt="CleanShot 2026-02-23 at 23 02 22@2x" src="https://github.com/user-attachments/assets/e2c32243-83db-4366-8315-96229949d6ae" />
+
 ## Install
 
 ```bash
