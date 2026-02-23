@@ -10,7 +10,7 @@ expression: output
    ○ blog                                         
    ○ dotfiles                                     
  ▾ work (3)                                       
-   ● api *                                        
+   ● api                                          
    ○ db      ┌ Confirm ──────────────┐            
    ○ frontend│                       │            
  ▾ General (1│Kill session           │            

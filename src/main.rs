@@ -10,7 +10,6 @@ use rink::status;
 use rink::tmux::{RealTmuxClient, TmuxClient};
 use rink::ui;
 use std::io;
-use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 
@@ -29,18 +28,12 @@ struct Cli {
     #[arg(long)]
     category: Option<String>,
 
-    /// Config file path
-    #[arg(long)]
-    config: Option<PathBuf>,
-
     #[command(subcommand)]
     command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize config files
-    Init,
     /// Handle Claude Code hooks
     Hook {
         /// Hook event type
@@ -58,10 +51,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Init) => {
-            init_config()?;
-            return Ok(());
-        }
         Some(Commands::Hook { event }) => {
             handle_hook(&event)?;
             return Ok(());
@@ -145,7 +134,7 @@ fn ensure_dependencies(standalone: bool) -> Result<(), Box<dyn std::error::Error
 }
 
 fn run_tui(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
-    let config = Config::load(cli.config.as_ref());
+    let config = Config::default();
     let refresh_interval = Duration::from_millis(config.refresh_interval_ms);
 
     let mut app = App::new(config, cli.standalone);
@@ -238,32 +227,6 @@ fn update_zellij_pane_name(session_name: &str) {
     let _ = ProcessCommand::new("zellij")
         .args(["action", "focus-previous-pane"])
         .output();
-}
-
-fn init_config() -> Result<(), Box<dyn std::error::Error>> {
-    let config_dir = dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("rink");
-    std::fs::create_dir_all(&config_dir)?;
-
-    let config_path = config_dir.join("config.toml");
-    if !config_path.exists() {
-        let default_config = r#"# Rink configuration
-separator = "-"
-refresh_interval_ms = 2000
-default_sort = "name"
-
-# [categories.work]
-# name = "Work"
-# color = "blue"
-"#;
-        std::fs::write(&config_path, default_config)?;
-        println!("Created config: {}", config_path.display());
-    } else {
-        println!("Config already exists: {}", config_path.display());
-    }
-
-    Ok(())
 }
 
 fn handle_hook(event: &str) -> Result<(), Box<dyn std::error::Error>> {

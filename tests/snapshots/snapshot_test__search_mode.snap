@@ -7,7 +7,7 @@ expression: output
                                                   
 ──────────────────────────────────────────────────
  ▾ work (3)                                       
-   ● api *                                        
+   ● api                                          
    ○ db                                           
    ○ frontend                                     
                                                   

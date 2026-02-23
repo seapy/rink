@@ -10,7 +10,7 @@ expression: output
    ○ blog                                         
    ○ dotfiles                                     
  ▾ work (3)                                       
-   ● api *                                        
+   ● api                                          
    ○ db   ┌ Rename Category ───────────┐          
    ○ front│                            │          
  ▾ General│ personaldev█               │          

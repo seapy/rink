@@ -10,7 +10,7 @@ expression: output
    ○ blog │                            │          
    ○ dotfi│  ↑/↓ k/j       Navigate up/│          
  ▾ work (3│  Enter         Switch sessi│          
-   ● api *│  /             Search sessi│          
+   ● api  │  /             Search sessi│          
    ○ db   │  Tab/←/→       Toggle colla│          
    ○ front│  r             Refresh sess│          
  ▾ General│  c             Create sessi│          

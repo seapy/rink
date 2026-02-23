@@ -8,7 +8,7 @@ expression: output
 ──────────────────────────────────────────────────
  ▸ personal (2)                                   
  ▾ work (3)                                       
-   ● api *                                        
+   ● api                                          
    ○ db                                           
    ○ frontend                                     
  ▾ General (1)                                    
