@@ -6,11 +6,11 @@ use rink::app::{Action, App};
 use rink::config::Config;
 use rink::keys;
 use rink::launcher;
+use rink::setup;
 use rink::status;
 use rink::tmux::{RealTmuxClient, TmuxClient};
 use rink::ui;
 use std::io;
-use std::path::Path;
 use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 
@@ -44,6 +44,14 @@ enum Commands {
     HookInstall,
     /// Print hook configuration JSON
     HookConfig,
+    /// Check whether required commands are installed
+    Doctor,
+    /// Install missing dependencies such as tmux and zellij
+    Setup {
+        /// Print the install plan without running commands
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() {
@@ -69,6 +77,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", status::hook_config());
             return Ok(());
         }
+        Some(Commands::Doctor) => {
+            if setup::print_doctor() {
+                return Ok(());
+            }
+            std::process::exit(1);
+        }
+        Some(Commands::Setup { dry_run }) => {
+            setup::run_setup(dry_run)?;
+            return Ok(());
+        }
         None => {}
     }
 
@@ -91,28 +109,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn has_command(name: &str) -> bool {
-    let Some(paths) = std::env::var_os("PATH") else {
-        return false;
-    };
-
-    std::env::split_paths(&paths).any(|dir| {
-        let candidate = dir.join(name);
-        candidate.is_file() && is_executable(&candidate)
-    })
-}
-
-#[cfg(unix)]
-fn is_executable(path: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-
-    path.metadata()
-        .map(|metadata| metadata.permissions().mode() & 0o111 != 0)
-        .unwrap_or(false)
-}
-
-#[cfg(not(unix))]
-fn is_executable(path: &Path) -> bool {
-    path.is_file()
+    setup::has_command(name)
 }
 
 fn install_with_homebrew(package: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -154,12 +151,12 @@ fn dependency_install_hint(package: &str) -> String {
 }
 
 fn linux_tmux_install_hint() -> String {
-    "Install tmux, then rerun rink. Examples:\n\n  Ubuntu/Debian:\n    sudo apt update\n    sudo apt install -y tmux\n\n  Fedora:\n    sudo dnf install tmux\n\n  Arch:\n    sudo pacman -S tmux"
+    "Run 'rink setup' to install missing dependencies, or 'rink doctor' to check what is missing."
         .to_string()
 }
 
 fn linux_zellij_install_hint() -> String {
-    "Install zellij, then rerun rink. On Ubuntu/Debian, use the upstream prebuilt binary:\n\n  mkdir -p \"$HOME/.local/bin\"\n  tmp=$(mktemp -d)\n  arch=$(uname -m)\n  case \"$arch\" in\n    x86_64) zellij_target=\"x86_64-unknown-linux-musl\" ;;\n    aarch64|arm64) zellij_target=\"aarch64-unknown-linux-musl\" ;;\n    *) echo \"Unsupported zellij arch: $arch\" >&2; exit 1 ;;\n  esac\n  zellij_tag=$(curl -fsSL https://api.github.com/repos/zellij-org/zellij/releases/latest | grep '\"tag_name\"' | sed 's/.*: \"//;s/\".*//')\n  curl -fsSL \"https://github.com/zellij-org/zellij/releases/download/${zellij_tag}/zellij-${zellij_target}.tar.gz\" -o \"$tmp/zellij.tar.gz\"\n  tar -xzf \"$tmp/zellij.tar.gz\" -C \"$tmp\"\n  install -m 0755 \"$tmp/zellij\" \"$HOME/.local/bin/zellij\"\n  rm -rf \"$tmp\"\n\n  # If needed, add this to your shell profile:\n  export PATH=\"$HOME/.local/bin:$PATH\"\n\nOther options:\n  cargo install --locked zellij\n  See: https://zellij.dev/documentation/installation"
+    "Run 'rink setup' to install missing dependencies, or 'rink doctor' to check what is missing. Use 'rink --standalone' for dashboard-only mode without zellij."
         .to_string()
 }
 

@@ -5,6 +5,7 @@ pub mod config;
 pub mod keys;
 pub mod launcher;
 pub mod search;
+pub mod setup;
 pub mod sort;
 pub mod state;
 pub mod status;
