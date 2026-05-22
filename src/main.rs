@@ -65,6 +65,8 @@ enum DoctorCommands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Inspect the live rink zellij/tmux frame and dump pane diagnostics
+    Inspect,
 }
 
 fn main() {
@@ -93,6 +95,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Doctor { command }) => {
             match command {
                 Some(DoctorCommands::Reset { dry_run }) => setup::run_reset(dry_run)?,
+                Some(DoctorCommands::Inspect) => setup::run_inspect()?,
                 None => {
                     if !setup::print_doctor() {
                         std::process::exit(1);
@@ -108,14 +111,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         None => {}
     }
 
-    let inside_zellij = std::env::var("ZELLIJ").is_ok();
+    ensure_dependencies(cli.standalone || cli.inside)?;
 
-    ensure_dependencies(cli.standalone || cli.inside || inside_zellij)?;
-
-    if cli.inside || cli.standalone || inside_zellij {
-        // Run TUI mode
+    if cli.inside || cli.standalone {
+        // Explicit TUI modes. `--inside` is used only by the rink-managed left pane.
         run_tui(cli)?;
     } else {
+        launcher::reject_implicit_launch_inside_zellij()?;
         // Launch zellij with rink layout
         if let Err(e) = launcher::launch_zellij() {
             eprintln!("Error: {}", e);

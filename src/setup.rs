@@ -102,6 +102,79 @@ pub fn run_reset(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn run_inspect() -> Result<(), Box<dyn std::error::Error>> {
+    println!("rink doctor inspect");
+    println!("-------------------");
+    println!("runtime dir: {}", launcher::runtime_dir().display());
+    println!("client tty: {}", launcher::client_tty_path().display());
+
+    if let Ok(tty) = std::fs::read_to_string(launcher::client_tty_path()) {
+        println!("client tty value: {}", tty.trim());
+    } else {
+        println!("client tty value: missing");
+    }
+
+    print_command_output(
+        "zellij sessions",
+        "zellij",
+        &["list-sessions", "--no-formatting"],
+    )?;
+    print_command_output(
+        "rink zellij panes",
+        "zellij",
+        &[
+            "--session",
+            launcher::ZELLIJ_SESSION_NAME,
+            "action",
+            "list-panes",
+            "--json",
+            "--all",
+        ],
+    )?;
+    print_command_output(
+        "rink zellij layout",
+        "zellij",
+        &[
+            "--session",
+            launcher::ZELLIJ_SESSION_NAME,
+            "action",
+            "dump-layout",
+        ],
+    )?;
+    print_command_output("tmux sessions", "tmux", &["list-sessions"])?;
+
+    Ok(())
+}
+
+fn print_command_output(
+    title: &str,
+    command: &str,
+    args: &[&str],
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n== {title} ==");
+    if !has_command(command) {
+        println!("skip: {command} not found");
+        return Ok(());
+    }
+
+    let output = Command::new(command).args(args).output()?;
+    if !output.status.success() {
+        println!("status: {}", output.status);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if !stdout.trim().is_empty() {
+        println!("{}", stdout.trim_end());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if !stderr.trim().is_empty() {
+        println!("stderr: {}", stderr.trim_end());
+    }
+
+    Ok(())
+}
+
 fn reset_zellij_session(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
     let session = launcher::ZELLIJ_SESSION_NAME;
     if !has_command("zellij") {

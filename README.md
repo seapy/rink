@@ -39,6 +39,7 @@ On Linux, use rink's built-in setup commands:
 
 ```bash
 rink doctor          # check tmux/zellij availability
+rink doctor inspect  # inspect live zellij panes, layout, runtime tty, and tmux sessions
 rink doctor reset    # remove generated rink/zellij/tmux runtime state
 rink setup           # install missing dependencies
 rink setup --dry-run # show what would be installed
@@ -68,7 +69,15 @@ rink --standalone
 
 ## Runtime files
 
-Transient files such as the right-pane tty and Claude Code status markers are stored in `/tmp/rink` by default. Set `RINK_RUNTIME_DIR` to override the parent directory.
+Transient files such as the right-pane tty and Claude Code status markers are stored under `$XDG_RUNTIME_DIR/rink` on Linux when available, otherwise `/tmp/rink`. Set `RINK_RUNTIME_DIR` to override the parent directory.
+
+If the left dashboard/sidebar is missing, first check whether `rink` was launched from inside an existing zellij pane. Plain `rink` is the split-frame launcher; inside zellij, use `rink --standalone` for dashboard-only mode or run plain `rink` from a shell outside zellij to create the left/right frame.
+
+For live frame diagnostics:
+
+```bash
+rink doctor inspect
+```
 
 If a previous launch left broken zellij/tmux state behind, reset generated state and start fresh:
 

@@ -7,6 +7,7 @@ pub const TMUX_SESSION_NAME: &str = "_rink_default";
 pub fn runtime_dir() -> PathBuf {
     std::env::var_os("RINK_RUNTIME_DIR")
         .map(PathBuf::from)
+        .or_else(|| std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("rink")
 }
@@ -122,6 +123,26 @@ fn kill_session() {
     let _ = std::process::Command::new("zellij")
         .args(["delete-session", "--force", ZELLIJ_SESSION_NAME])
         .output();
+}
+
+/// Returns true when the current process is running inside any zellij session.
+pub fn inside_zellij_environment() -> bool {
+    std::env::var("ZELLIJ").is_ok()
+}
+
+/// Plain `rink` is the frame launcher. Do not silently switch it to dashboard-only
+/// mode just because ZELLIJ is present: that happens inside the right tmux pane of
+/// a rink frame and inside unrelated zellij sessions, and it looks exactly like
+/// the left sidebar failed to appear.
+pub fn reject_implicit_launch_inside_zellij() -> Result<(), String> {
+    if inside_zellij_environment() {
+        return Err(
+            "rink is already running inside a zellij environment, so plain `rink` would not create the left/right frame.\n\
+Run `rink --standalone` for dashboard-only mode in this pane, or run plain `rink` from outside zellij to create the left sidebar frame."
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 /// Arguments used to start zellij with rink's layout.
