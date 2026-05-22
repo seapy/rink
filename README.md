@@ -39,6 +39,7 @@ On Linux, use rink's built-in setup commands:
 
 ```bash
 rink doctor          # check tmux/zellij availability
+rink doctor reset    # remove generated rink/zellij/tmux runtime state
 rink setup           # install missing dependencies
 rink setup --dry-run # show what would be installed
 ```
@@ -67,7 +68,14 @@ rink --standalone
 
 ## Runtime files
 
-Transient files such as the right-pane tty and Claude Code status markers are stored in `/tmp/rink`.
+Transient files such as the right-pane tty and Claude Code status markers are stored in `/tmp/rink` by default. Set `RINK_RUNTIME_DIR` to override the parent directory.
+
+If a previous launch left broken zellij/tmux state behind, reset generated state and start fresh:
+
+```bash
+rink doctor reset --dry-run # inspect what would be removed
+rink doctor reset           # delete rink's zellij session, tmux frame session, and generated files
+```
 
 ## Keybindings
 

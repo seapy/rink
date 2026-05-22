@@ -30,7 +30,7 @@ fn right_pane_sets_safe_term_before_running_tmux() {
     let term_fix = "if [ -z \\\"${TERM:-}\\\" ] || [ \\\"$TERM\\\" = dumb ]; then export TERM=xterm-256color; fi";
     assert!(layout.contains(term_fix), "layout was: {layout}");
     assert!(
-        layout.contains("exec tmux new-session -A -s _rink_default"),
+        layout.contains("exec tmux new-session -A -s '_rink_default'"),
         "layout was: {layout}"
     );
     assert!(

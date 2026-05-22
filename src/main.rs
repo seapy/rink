@@ -45,10 +45,23 @@ enum Commands {
     /// Print hook configuration JSON
     HookConfig,
     /// Check whether required commands are installed
-    Doctor,
+    Doctor {
+        #[command(subcommand)]
+        command: Option<DoctorCommands>,
+    },
     /// Install missing dependencies such as tmux and zellij
     Setup {
         /// Print the install plan without running commands
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum DoctorCommands {
+    /// Reset rink's generated runtime state and temporary sessions
+    Reset {
+        /// Show what would be removed without deleting anything
         #[arg(long)]
         dry_run: bool,
     },
@@ -77,11 +90,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", status::hook_config());
             return Ok(());
         }
-        Some(Commands::Doctor) => {
-            if setup::print_doctor() {
-                return Ok(());
+        Some(Commands::Doctor { command }) => {
+            match command {
+                Some(DoctorCommands::Reset { dry_run }) => setup::run_reset(dry_run)?,
+                None => {
+                    if !setup::print_doctor() {
+                        std::process::exit(1);
+                    }
+                }
             }
-            std::process::exit(1);
+            return Ok(());
         }
         Some(Commands::Setup { dry_run }) => {
             setup::run_setup(dry_run)?;

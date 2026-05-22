@@ -1,10 +1,19 @@
 use std::path::{Path, PathBuf};
 
-const ZELLIJ_SESSION_NAME: &str = "_rink_dash";
+pub const ZELLIJ_SESSION_NAME: &str = "_rink_dash";
+pub const TMUX_SESSION_NAME: &str = "_rink_default";
+
+/// Directory for transient runtime files shared between zellij panes.
+pub fn runtime_dir() -> PathBuf {
+    std::env::var_os("RINK_RUNTIME_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("rink")
+}
 
 /// Path to the file where the right pane's tty is stored.
 pub fn client_tty_path() -> PathBuf {
-    PathBuf::from("/tmp/rink/client_tty")
+    runtime_dir().join("client_tty")
 }
 
 fn shell_quote(value: &str) -> String {
@@ -26,7 +35,9 @@ pub fn generate_kdl_layout(rink_binary: &str) -> String {
         "{terminal_env}; {rink_binary_arg} --inside; status=$?; printf '\\n'; printf 'rink --inside exited with status %s. Press Enter to close this pane.' \"$status\"; read _"
     );
     let right_shell_command = format!(
-        "{terminal_env}; mkdir -p /tmp/rink && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
+        "{terminal_env}; mkdir -p {} && tty > {tty_path_arg} && exec tmux new-session -A -s {}",
+        shell_quote(&runtime_dir().to_string_lossy()),
+        shell_quote(TMUX_SESSION_NAME)
     );
     format!(
         r#"layout {{

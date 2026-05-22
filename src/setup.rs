@@ -1,3 +1,4 @@
+use crate::launcher;
 use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -79,6 +80,106 @@ pub fn print_doctor() -> bool {
     }
 
     ok
+}
+
+pub fn run_reset(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    println!("rink doctor reset");
+    println!("-----------------");
+    if dry_run {
+        println!("dry run: state that would be reset\n");
+    }
+
+    reset_zellij_session(dry_run)?;
+    reset_tmux_session(dry_run)?;
+    reset_generated_files(dry_run)?;
+
+    if dry_run {
+        println!("\nDry run complete. Run without --dry-run to reset rink state.");
+    } else {
+        println!("\nReset complete. Run: rink");
+    }
+
+    Ok(())
+}
+
+fn reset_zellij_session(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let session = launcher::ZELLIJ_SESSION_NAME;
+    if !has_command("zellij") {
+        println!("skip: zellij session {session} (zellij not found)");
+        return Ok(());
+    }
+
+    if dry_run {
+        println!("would delete: zellij session {session}");
+        return Ok(());
+    }
+
+    let output = Command::new("zellij")
+        .args(["delete-session", "--force", session])
+        .output()?;
+    if output.status.success() {
+        println!("deleted: zellij session {session}");
+    } else {
+        println!("ok: zellij session {session} was not active");
+    }
+    Ok(())
+}
+
+fn reset_tmux_session(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let session = launcher::TMUX_SESSION_NAME;
+    if !has_command("tmux") {
+        println!("skip: tmux session {session} (tmux not found)");
+        return Ok(());
+    }
+
+    if dry_run {
+        println!("would kill: tmux session {session}");
+        return Ok(());
+    }
+
+    let output = Command::new("tmux")
+        .args(["kill-session", "-t", session])
+        .output()?;
+    if output.status.success() {
+        println!("killed: tmux session {session}");
+    } else {
+        println!("ok: tmux session {session} was not active");
+    }
+    Ok(())
+}
+
+fn reset_generated_files(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let targets = reset_file_targets();
+    for target in targets {
+        if dry_run {
+            println!("would remove: {}", target.display());
+            continue;
+        }
+
+        if target.is_dir() {
+            std::fs::remove_dir_all(&target)?;
+            println!("removed: {}", target.display());
+        } else if target.exists() {
+            std::fs::remove_file(&target)?;
+            println!("removed: {}", target.display());
+        } else {
+            println!("ok: {} already absent", target.display());
+        }
+    }
+    Ok(())
+}
+
+fn reset_file_targets() -> Vec<PathBuf> {
+    let data_dir = dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("rink");
+
+    vec![
+        data_dir.join("layout.kdl"),
+        data_dir.join("zellij.kdl"),
+        launcher::client_tty_path(),
+        launcher::runtime_dir(),
+    ]
 }
 
 pub fn setup_steps() -> Vec<SetupStep> {
