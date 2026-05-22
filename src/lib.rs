@@ -4,6 +4,7 @@ pub mod command;
 pub mod config;
 pub mod keys;
 pub mod launcher;
+pub mod runtime;
 pub mod search;
 pub mod sort;
 pub mod state;

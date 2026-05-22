@@ -69,7 +69,7 @@ impl App {
     }
 
     pub fn with_state(config: Config, standalone: bool, state: PersistentState) -> Self {
-        let sort_mode = SortMode::from_str(&config.default_sort);
+        let sort_mode = SortMode::parse_lossy(&config.default_sort);
 
         Self {
             mode: Mode::Normal,
@@ -340,8 +340,7 @@ impl App {
             return Action::None;
         }
 
-        if let Some(ListItem::SessionEntry { session, .. }) =
-            self.visible_items.get(self.selected)
+        if let Some(ListItem::SessionEntry { session, .. }) = self.visible_items.get(self.selected)
         {
             let name = session.name.clone();
             self.state.move_session(&name, direction);
@@ -362,7 +361,10 @@ impl App {
                 self.mode = Mode::Normal;
                 self.rebuild_visible_items();
             }
-            Mode::Help | Mode::ConfirmKill | Mode::Creating | Mode::Renaming
+            Mode::Help
+            | Mode::ConfirmKill
+            | Mode::Creating
+            | Mode::Renaming
             | Mode::RenamingCategory => {
                 self.mode = Mode::Normal;
                 self.input_buffer.clear();
@@ -474,19 +476,19 @@ impl App {
                     let current = client.current_session();
 
                     // Collect sessions to kill
-                    let sessions_to_kill: Vec<String> =
-                        if let Some(cat) = target.strip_prefix("category:") {
-                            self.sessions
-                                .iter()
-                                .filter(|s| {
-                                    category::extract_category(&s.name, &self.config.separator)
-                                        == cat
-                                })
-                                .map(|s| s.name.clone())
-                                .collect()
-                        } else {
-                            vec![target.clone()]
-                        };
+                    let sessions_to_kill: Vec<String> = if let Some(cat) =
+                        target.strip_prefix("category:")
+                    {
+                        self.sessions
+                            .iter()
+                            .filter(|s| {
+                                category::extract_category(&s.name, &self.config.separator) == cat
+                            })
+                            .map(|s| s.name.clone())
+                            .collect()
+                    } else {
+                        vec![target.clone()]
+                    };
 
                     // Check if the current session is being killed
                     let current_being_killed = current
@@ -548,8 +550,7 @@ impl App {
     }
 
     pub fn selected_session_name(&self) -> Option<String> {
-        if let Some(ListItem::SessionEntry { session, .. }) =
-            self.visible_items.get(self.selected)
+        if let Some(ListItem::SessionEntry { session, .. }) = self.visible_items.get(self.selected)
         {
             Some(session.name.clone())
         } else {

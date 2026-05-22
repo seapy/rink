@@ -74,10 +74,7 @@ pub fn translate(key: KeyEvent, mode: &Mode) -> Command {
         // Korean normalization
         KeyCode::Char(c) => {
             if let Some(ascii) = normalize_korean_dvorak(c) {
-                translate(
-                    KeyEvent::new(KeyCode::Char(ascii), key.modifiers),
-                    mode,
-                )
+                translate(KeyEvent::new(KeyCode::Char(ascii), key.modifiers), mode)
             } else {
                 Command::None
             }

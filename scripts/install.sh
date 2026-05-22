@@ -1,54 +1,81 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 REPO="seapy/rink"
-INSTALL_DIR="$HOME/.local/bin"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
-# macOS only
-if [[ "$(uname)" != "Darwin" ]]; then
-  echo "Error: rink only supports macOS."
-  exit 1
-fi
+need_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Error: required command '$1' not found." >&2
+    exit 1
+  fi
+}
 
-# Detect architecture
+need_cmd curl
+need_cmd grep
+need_cmd sed
+need_cmd tar
+need_cmd mktemp
+need_cmd uname
+
+# Detect platform and architecture.
+OS=$(uname -s)
 ARCH=$(uname -m)
-case "$ARCH" in
-  arm64)  TARGET="aarch64-apple-darwin" ;;
-  x86_64) TARGET="x86_64-apple-darwin" ;;
-  *)      echo "Error: unsupported architecture: $ARCH"; exit 1 ;;
+case "$OS:$ARCH" in
+  Darwin:arm64)   TARGET="aarch64-apple-darwin" ;;
+  Darwin:x86_64)  TARGET="x86_64-apple-darwin" ;;
+  Linux:x86_64)   TARGET="x86_64-unknown-linux-gnu" ;;
+  Linux:aarch64)  TARGET="aarch64-unknown-linux-gnu" ;;
+  Linux:arm64)    TARGET="aarch64-unknown-linux-gnu" ;;
+  *)
+    echo "Error: unsupported platform: $OS $ARCH" >&2
+    echo "Supported targets: macOS arm64/x86_64, Linux x86_64/aarch64" >&2
+    exit 1
+    ;;
 esac
 
-# Get latest release tag
+# Get latest release tag.
 echo "Fetching latest release..."
 TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | sed 's/.*: "//;s/".*//')
 
 if [[ -z "$TAG" ]]; then
-  echo "Error: could not find latest release."
+  echo "Error: could not find latest release." >&2
   exit 1
 fi
 
 echo "Installing rink $TAG ($TARGET)..."
 
-# Download and extract
+# Download and extract.
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-curl -fsSL "https://github.com/$REPO/releases/download/$TAG/rink-$TARGET.tar.gz" -o "$TMP_DIR/rink.tar.gz"
+ASSET="rink-$TARGET.tar.gz"
+URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+if ! curl -fsSL "$URL" -o "$TMP_DIR/rink.tar.gz"; then
+  echo "Error: release asset not found for $TARGET: $URL" >&2
+  echo "If this is an older release, build from source with: cargo install --git https://github.com/$REPO" >&2
+  exit 1
+fi
+
 tar xzf "$TMP_DIR/rink.tar.gz" -C "$TMP_DIR"
 
-# Install
+# Install.
 mkdir -p "$INSTALL_DIR"
 cp "$TMP_DIR/rink" "$INSTALL_DIR/rink"
 chmod +x "$INSTALL_DIR/rink"
 
 echo "Installed rink $TAG to $INSTALL_DIR/rink"
 
-# Check PATH
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-  echo ""
-  echo "Add to your shell profile:"
-  echo '  export PATH="$HOME/.local/bin:$PATH"'
-fi
+# Check PATH.
+case ":$PATH:" in
+  *":$INSTALL_DIR:"*) ;;
+  *)
+    echo ""
+    echo "Add to your shell profile:"
+    echo '  export PATH="$HOME/.local/bin:$PATH"'
+    ;;
+esac
 
 echo ""
+echo "Dependencies: tmux is required. zellij is required unless you run 'rink --standalone'."
 echo "Run 'rink' to start."

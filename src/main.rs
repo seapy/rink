@@ -10,6 +10,7 @@ use rink::status;
 use rink::tmux::{RealTmuxClient, TmuxClient};
 use rink::ui;
 use std::io;
+use std::path::Path;
 use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 
@@ -46,8 +47,6 @@ enum Commands {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    check_platform()?;
-
     let cli = Cli::parse();
 
     match cli.command {
@@ -84,28 +83,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn check_platform() -> Result<(), Box<dyn std::error::Error>> {
-    if cfg!(not(target_os = "macos")) {
-        eprintln!("Error: rink only supports macOS.");
-        std::process::exit(1);
-    }
-    Ok(())
+fn has_command(name: &str) -> bool {
+    let Some(paths) = std::env::var_os("PATH") else {
+        return false;
+    };
+
+    std::env::split_paths(&paths).any(|dir| {
+        let candidate = dir.join(name);
+        candidate.is_file() && is_executable(&candidate)
+    })
 }
 
-fn has_command(name: &str) -> bool {
-    ProcessCommand::new("which")
-        .arg(name)
-        .output()
-        .map(|o| o.status.success())
+#[cfg(unix)]
+fn is_executable(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    path.metadata()
+        .map(|metadata| metadata.permissions().mode() & 0o111 != 0)
         .unwrap_or(false)
 }
 
-fn brew_install(package: &str) -> Result<(), Box<dyn std::error::Error>> {
+#[cfg(not(unix))]
+fn is_executable(path: &Path) -> bool {
+    path.is_file()
+}
+
+fn install_with_homebrew(package: &str) -> Result<(), Box<dyn std::error::Error>> {
     if !has_command("brew") {
         return Err(format!(
             "Homebrew is not installed. Install it first: https://brew.sh\nThen run: brew install {}",
             package
-        ).into());
+        )
+        .into());
     }
 
     eprintln!("Installing {} via Homebrew...", package);
@@ -121,13 +130,50 @@ fn brew_install(package: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn ensure_dependencies(standalone: bool) -> Result<(), Box<dyn std::error::Error>> {
-    if !has_command("tmux") {
-        brew_install("tmux")?;
+fn dependency_install_hint(package: &str) -> String {
+    if cfg!(target_os = "macos") {
+        format!("Run: brew install {package}")
+    } else if cfg!(target_os = "linux") {
+        match package {
+            "tmux" => "Install tmux with your distro package manager, for example:\n  Ubuntu/Debian: sudo apt install tmux\n  Fedora: sudo dnf install tmux\n  Arch: sudo pacman -S tmux".to_string(),
+            "zellij" => "Install zellij with your distro package manager if available, or use the upstream instructions: https://zellij.dev/documentation/installation".to_string(),
+            _ => format!("Install {package} with your distro package manager and make sure it is on PATH."),
+        }
+    } else {
+        format!("Install {package} and make sure it is on PATH.")
+    }
+}
+
+fn ensure_dependency(
+    package: &str,
+    allow_auto_install: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if has_command(package) {
+        return Ok(());
     }
 
-    if !standalone && !has_command("zellij") {
-        brew_install("zellij")?;
+    if allow_auto_install && cfg!(target_os = "macos") {
+        install_with_homebrew(package)?;
+        return Ok(());
+    }
+
+    Err(format!(
+        "Required command '{}' was not found on PATH.\n{}",
+        package,
+        dependency_install_hint(package)
+    )
+    .into())
+}
+
+fn ensure_dependencies(standalone: bool) -> Result<(), Box<dyn std::error::Error>> {
+    // Keep the old macOS convenience behavior, but avoid running sudo-capable
+    // package managers implicitly on Linux servers.
+    let auto_install = cfg!(target_os = "macos");
+
+    ensure_dependency("tmux", auto_install)?;
+
+    if !standalone {
+        ensure_dependency("zellij", auto_install)?;
     }
 
     Ok(())

@@ -4,7 +4,7 @@ A tmux session dashboard. View, switch, and manage all your tmux sessions at a g
 
 Uses zellij as an outer frame — session list + preview on the left, live tmux terminal on the right.
 
-> macOS only. Inspired by [nacyot/muxdash](https://github.com/nacyot/muxdash).
+Inspired by [nacyot/muxdash](https://github.com/nacyot/muxdash). Supports macOS and Linux.
 
 <img width="2296" height="1418" alt="CleanShot 2026-02-23 at 23 02 22@2x" src="https://github.com/user-attachments/assets/e2c32243-83db-4366-8315-96229949d6ae" />
 
@@ -14,14 +14,42 @@ Uses zellij as an outer frame — session list + preview on the left, live tmux 
 curl -fsSL https://raw.githubusercontent.com/seapy/rink/master/scripts/install.sh | bash
 ```
 
-Downloads a pre-built binary from GitHub Releases. Supports both Apple Silicon and Intel Mac.
+Downloads a pre-built binary from GitHub Releases.
 
-tmux and zellij are auto-installed via Homebrew on first run if missing.
+Supported release targets:
+
+- macOS Apple Silicon: `aarch64-apple-darwin`
+- macOS Intel: `x86_64-apple-darwin`
+- Linux x86_64: `x86_64-unknown-linux-gnu`
+- Linux ARM64: `aarch64-unknown-linux-gnu`
 
 You may need to add to your PATH:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
+```
+
+### Dependencies
+
+`tmux` is required. `zellij` is required for the default split-frame UI; it is not required for `rink --standalone`.
+
+On macOS, missing dependencies are auto-installed via Homebrew on first run.
+
+On Linux servers, install dependencies with your distro package manager or from upstream releases before running rink. For example:
+
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install tmux
+
+# Install zellij if your distro provides it; otherwise use upstream instructions:
+# https://zellij.dev/documentation/installation
+```
+
+If a pre-built binary is not available for your platform, build from source:
+
+```bash
+cargo install --git https://github.com/seapy/rink
 ```
 
 ## Usage
@@ -37,6 +65,16 @@ For dashboard-only mode without the zellij frame:
 ```bash
 rink --standalone
 ```
+
+## Runtime files
+
+Transient files such as the right-pane tty and Claude Code status markers are stored in a per-user runtime directory:
+
+- `$RINK_RUNTIME_DIR/rink` when `RINK_RUNTIME_DIR` is set
+- `$XDG_RUNTIME_DIR/rink` on Linux sessions that provide it
+- `/tmp/rink-$USER` as a fallback
+
+This avoids permission conflicts on shared Linux servers where a global `/tmp/rink` directory could be owned by another user.
 
 ## Keybindings
 

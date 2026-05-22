@@ -36,10 +36,7 @@ pub fn group_sessions(sessions: &[Session], separator: &str) -> Vec<SessionGroup
 
     for session in sessions {
         let category = extract_category(&session.name, separator);
-        groups
-            .entry(category)
-            .or_default()
-            .push(session.clone());
+        groups.entry(category).or_default().push(session.clone());
     }
 
     groups

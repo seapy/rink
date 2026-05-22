@@ -68,8 +68,8 @@ impl PersistentState {
 
     pub fn move_session(&mut self, session_name: &str, direction: i32) {
         if let Some(pos) = self.session_order.iter().position(|s| s == session_name) {
-            let new_pos = (pos as i32 + direction).clamp(0, self.session_order.len() as i32 - 1)
-                as usize;
+            let new_pos =
+                (pos as i32 + direction).clamp(0, self.session_order.len() as i32 - 1) as usize;
             if new_pos != pos {
                 let item = self.session_order.remove(pos);
                 self.session_order.insert(new_pos, item);
@@ -84,8 +84,7 @@ impl PersistentState {
 
     pub fn toggle_collapsed(&mut self, category: &str) {
         if self.is_collapsed(category) {
-            self.collapsed_categories
-                .retain(|c| c != category);
+            self.collapsed_categories.retain(|c| c != category);
         } else {
             self.collapsed_categories.push(category.to_string());
         }

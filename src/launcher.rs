@@ -2,32 +2,47 @@ use std::path::PathBuf;
 
 const ZELLIJ_SESSION_NAME: &str = "_rink_dash";
 
-/// Generate a KDL layout for zellij with rink TUI on the left and tmux on the right
-/// Path to the file where the right pane's tty is stored
+/// Path to the file where the right pane's tty is stored.
 pub fn client_tty_path() -> PathBuf {
-    PathBuf::from("/tmp/rink/client_tty")
+    crate::runtime::runtime_dir().join("client_tty")
 }
 
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
+}
+
+fn kdl_string(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+/// Generate a KDL layout for zellij with rink TUI on the left and tmux on the right.
 pub fn generate_kdl_layout(rink_binary: &str) -> String {
+    let runtime_dir = crate::runtime::runtime_dir();
     let tty_path = client_tty_path();
-    let tty_path_str = tty_path.to_string_lossy();
+    let runtime_dir_arg = shell_quote(&runtime_dir.to_string_lossy());
+    let tty_path_arg = shell_quote(&tty_path.to_string_lossy());
+    let shell_command = format!(
+        "mkdir -p {runtime_dir_arg} && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
+    );
     format!(
         r#"layout {{
     tab {{
         pane split_direction="vertical" {{
             pane size="35%" name="sessions" {{
-                command "{rink_binary}"
+                command "{}"
                 args "--inside"
             }}
             pane size="65%" {{
                 command "sh"
-                args "-c" "mkdir -p /tmp/rink && tty > {tty_path_str} && exec tmux new-session -A -s _rink_default"
+                args "-c" "{}"
             }}
         }}
     }}
 }}
 
-"#
+"#,
+        kdl_string(rink_binary),
+        kdl_string(&shell_command)
     )
 }
 
@@ -44,8 +59,7 @@ fn write_layout() -> Result<PathBuf, String> {
         .to_string();
 
     let dir = data_dir();
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create data dir: {}", e))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
 
     let layout_path = dir.join("layout.kdl");
     std::fs::write(&layout_path, generate_kdl_layout(&rink_binary))
@@ -56,8 +70,7 @@ fn write_layout() -> Result<PathBuf, String> {
 
 fn write_zellij_config() -> Result<PathBuf, String> {
     let dir = data_dir();
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create data dir: {}", e))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
 
     let config_path = dir.join("zellij.kdl");
     let content = r#"// rink zellij config
@@ -83,10 +96,8 @@ fn session_is_alive() -> bool {
     match output {
         Ok(o) => {
             let text = String::from_utf8_lossy(&o.stdout);
-            text.lines().any(|line| {
-                line.starts_with(ZELLIJ_SESSION_NAME)
-                    && !line.contains("EXITED")
-            })
+            text.lines()
+                .any(|line| line.starts_with(ZELLIJ_SESSION_NAME) && !line.contains("EXITED"))
         }
         Err(_) => false,
     }

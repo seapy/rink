@@ -11,7 +11,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Header
-            Constraint::Min(1),   // Main content
+            Constraint::Min(1),    // Main content
             Constraint::Length(2), // Footer
         ])
         .split(frame.area());
@@ -26,9 +26,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         Mode::ConfirmKill => render_confirm_popup(frame, app),
         Mode::Creating => render_input_popup(frame, "New Session", &app.input_buffer),
         Mode::Renaming => render_input_popup(frame, "Rename Session", &app.input_buffer),
-        Mode::RenamingCategory => {
-            render_input_popup(frame, "Rename Category", &app.input_buffer)
-        }
+        Mode::RenamingCategory => render_input_popup(frame, "Rename Category", &app.input_buffer),
         _ => {}
     }
 }
@@ -37,7 +35,12 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
     let sort_label = format!(" Sort: {} ", app.sort_mode);
 
     let mut header_spans = vec![
-        Span::styled(" rink ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " rink ",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::raw(" "),
         Span::styled(
             format!("[{}]", sort_label.trim()),
@@ -83,8 +86,8 @@ fn render_main(frame: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(3),    // Session list
-            Constraint::Min(5),    // Preview
+            Constraint::Min(3), // Session list
+            Constraint::Min(5), // Preview
         ])
         .split(area);
 
@@ -134,12 +137,10 @@ fn render_session_list(frame: &mut Frame, app: &App, area: Rect) {
                         style = style.add_modifier(Modifier::UNDERLINED);
                     }
                     let marker = if is_focused { " <<" } else { "" };
-                    let line = Line::from(vec![
-                        Span::styled(
-                            format!(" {} {} ({}){}", arrow, display_name, session_count, marker),
-                            style,
-                        ),
-                    ]);
+                    let line = Line::from(vec![Span::styled(
+                        format!(" {} {} ({}){}", arrow, display_name, session_count, marker),
+                        style,
+                    )]);
                     RatatuiListItem::new(line)
                 }
                 ListItem::SessionEntry {
@@ -194,13 +195,7 @@ fn render_session_list(frame: &mut Frame, app: &App, area: Rect) {
                         }
                     }
 
-                    let style = if is_selected {
-                        Style::default()
-                    } else {
-                        Style::default()
-                    };
-
-                    RatatuiListItem::new(Line::from(spans)).style(style)
+                    RatatuiListItem::new(Line::from(spans)).style(Style::default())
                 }
             }
         })
@@ -277,9 +272,7 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
             let mut s = vec![
                 Span::styled(
                     format!(" {} ", key),
-                    Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::DarkGray),
+                    Style::default().fg(Color::Black).bg(Color::DarkGray),
                 ),
                 Span::styled(format!(" {} ", desc), Style::default().fg(Color::DarkGray)),
             ];
@@ -293,7 +286,12 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     // Search bar
     let content = if app.mode == Mode::Search {
         let search_line = Line::from(vec![
-            Span::styled(" / ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                " / ",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::raw(&app.search.query),
             Span::styled("█", Style::default().fg(Color::Yellow)),
         ]);
@@ -372,15 +370,20 @@ fn render_confirm_popup(frame: &mut Frame, app: &App) {
 
     let popup = Paragraph::new(vec![
         Line::from(""),
-        Line::from(vec![Span::styled(
-            msg,
-            Style::default().fg(Color::Red),
-        )]),
+        Line::from(vec![Span::styled(msg, Style::default().fg(Color::Red))]),
         Line::from(""),
         Line::from(vec![
-            Span::styled(" y ", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                " y ",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ),
             Span::raw("es  "),
-            Span::styled(" n ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                " n ",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::raw("o"),
         ]),
     ])

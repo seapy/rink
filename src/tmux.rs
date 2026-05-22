@@ -36,6 +36,12 @@ impl RealTmuxClient {
     }
 }
 
+impl Default for RealTmuxClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TmuxClient for RealTmuxClient {
     fn list_sessions(&self) -> Vec<Session> {
         let format = "#{session_name}\t#{session_windows}\t#{session_activity}\t#{session_created}";
@@ -124,13 +130,7 @@ impl TmuxClient for RealTmuxClient {
     fn capture_pane(&self, session_name: &str) -> Option<String> {
         // Use "session:" format for pane target (= prefix doesn't work with capture-pane)
         let pane_target = format!("{}:", session_name);
-        self.run_tmux(&[
-            "capture-pane",
-            "-pt",
-            &pane_target,
-            "-S",
-            "-100",
-        ])
+        self.run_tmux(&["capture-pane", "-pt", &pane_target, "-S", "-100"])
     }
 }
 
@@ -151,7 +151,10 @@ impl TmuxClient for FakeTmuxClient {
     }
 
     fn current_session(&self) -> Option<String> {
-        self.sessions.iter().find(|s| s.attached).map(|s| s.name.clone())
+        self.sessions
+            .iter()
+            .find(|s| s.attached)
+            .map(|s| s.name.clone())
     }
 
     fn switch_client(&self, _session_name: &str) -> bool {

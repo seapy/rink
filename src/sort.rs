@@ -22,7 +22,7 @@ impl SortMode {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_lossy(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "recent" => SortMode::Recent,
             "windows" => SortMode::Windows,
@@ -46,7 +46,7 @@ impl fmt::Display for SortMode {
 pub fn sort_sessions(sessions: &mut [Session], mode: SortMode) {
     match mode {
         SortMode::Name => {
-            sessions.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            sessions.sort_by_key(|session| session.name.to_lowercase());
         }
         SortMode::Recent => {
             sessions.sort_by(|a, b| {
@@ -56,7 +56,7 @@ pub fn sort_sessions(sessions: &mut [Session], mode: SortMode) {
             });
         }
         SortMode::Windows => {
-            sessions.sort_by(|a, b| b.windows.cmp(&a.windows));
+            sessions.sort_by_key(|session| std::cmp::Reverse(session.windows));
         }
         SortMode::Custom => {
             // Custom sort is handled by the state module
@@ -64,7 +64,7 @@ pub fn sort_sessions(sessions: &mut [Session], mode: SortMode) {
     }
 }
 
-pub fn sort_groups(groups: &mut Vec<SessionGroup>, mode: SortMode, state: &PersistentState) {
+pub fn sort_groups(groups: &mut [SessionGroup], mode: SortMode, state: &PersistentState) {
     match mode {
         SortMode::Custom => {
             groups.sort_by(|a, b| {
@@ -105,8 +105,14 @@ pub fn sort_groups(groups: &mut Vec<SessionGroup>, mode: SortMode, state: &Persi
         for group in groups.iter_mut() {
             let order = &state.session_order;
             group.sessions.sort_by(|a, b| {
-                let a_idx = order.iter().position(|s| s == &a.name).unwrap_or(usize::MAX);
-                let b_idx = order.iter().position(|s| s == &b.name).unwrap_or(usize::MAX);
+                let a_idx = order
+                    .iter()
+                    .position(|s| s == &a.name)
+                    .unwrap_or(usize::MAX);
+                let b_idx = order
+                    .iter()
+                    .position(|s| s == &b.name)
+                    .unwrap_or(usize::MAX);
                 a_idx.cmp(&b_idx)
             });
         }
