@@ -1,5 +1,29 @@
-use rink::launcher::{generate_kdl_layout, zellij_launch_args};
+use rink::launcher::{generate_kdl_layout, list_sessions_contains, zellij_launch_args};
 use std::path::Path;
+
+#[test]
+fn session_exists_detects_alive_detached_and_exited_states() {
+    // Each entry below is sampled from `zellij list-sessions --no-formatting`.
+    // The launcher must recognize the rink session in every state, because
+    // zellij refuses `--new-session-with-layout` when an EXITED session with
+    // the same name still exists. Failing to detect EXITED here is what made
+    // the left sidebar appear "missing" — zellij would not start at all.
+    let alive = "dev [Created 4m 52s ago] (current)\n_rink_dash [Created 3s ago]";
+    let detached = "_rink_dash [Created 3s ago]";
+    let exited = "_rink_dash [Created 27s ago] (EXITED - attach to resurrect)";
+
+    assert!(list_sessions_contains(alive, "_rink_dash"));
+    assert!(list_sessions_contains(detached, "_rink_dash"));
+    assert!(list_sessions_contains(exited, "_rink_dash"));
+
+    // Must not false-match a session whose name merely starts with ours.
+    let look_alike = "_rink_dash_extra [Created 5s ago]";
+    assert!(!list_sessions_contains(look_alike, "_rink_dash"));
+
+    // Must not match when the session is absent.
+    let none = "dev [Created 1s ago] (current)";
+    assert!(!list_sessions_contains(none, "_rink_dash"));
+}
 
 #[test]
 fn left_pane_runs_rink_inside_through_shell_and_keeps_errors_visible() {

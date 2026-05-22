@@ -102,18 +102,31 @@ ui {
     Ok(config_path)
 }
 
-/// Check if our zellij session exists and is alive (not EXITED)
-fn session_is_alive() -> bool {
+/// Parse `zellij list-sessions --no-formatting` output and return true if a
+/// session named `name` appears in *any* state (alive, detached, or EXITED).
+/// zellij refuses `--new-session-with-layout` when the target name already
+/// belongs to an EXITED session, so the launcher must clear *any* leftover
+/// before starting a fresh frame — not just live ones.
+pub fn list_sessions_contains(output: &str, name: &str) -> bool {
+    output.lines().any(|line| {
+        let trimmed = line.trim_start();
+        let rest = match trimmed.strip_prefix(name) {
+            Some(r) => r,
+            None => return false,
+        };
+        // Make sure we matched the whole session name, not just a prefix
+        // (e.g. "_rink_dash" must not match "_rink_dash_other").
+        rest.chars().next().map_or(true, |c| c == ' ' || c == '\t')
+    })
+}
+
+fn session_exists() -> bool {
     let output = std::process::Command::new("zellij")
         .args(["list-sessions", "--no-formatting"])
         .output();
 
     match output {
-        Ok(o) => {
-            let text = String::from_utf8_lossy(&o.stdout);
-            text.lines()
-                .any(|line| line.starts_with(ZELLIJ_SESSION_NAME) && !line.contains("EXITED"))
-        }
+        Ok(o) => list_sessions_contains(&String::from_utf8_lossy(&o.stdout), ZELLIJ_SESSION_NAME),
         Err(_) => false,
     }
 }
@@ -160,8 +173,9 @@ pub fn zellij_launch_args(config: &Path, layout: &Path) -> Vec<String> {
 pub fn launch_zellij() -> Result<(), String> {
     // The zellij session is only the outer frame; tmux keeps the actual work
     // session alive. Recreate the frame each time so stale/broken layouts from
-    // older rink versions do not leave users in a blank zellij session.
-    if session_is_alive() {
+    // older rink versions do not leave users in a blank zellij session, and
+    // so an EXITED session from a previous quit does not block the new launch.
+    if session_exists() {
         kill_session();
     }
 
