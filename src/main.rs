@@ -46,7 +46,14 @@ enum Commands {
     HookConfig,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("Error: {e}");
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -135,13 +142,25 @@ fn dependency_install_hint(package: &str) -> String {
         format!("Run: brew install {package}")
     } else if cfg!(target_os = "linux") {
         match package {
-            "tmux" => "Install tmux with your distro package manager, for example:\n  Ubuntu/Debian: sudo apt install tmux\n  Fedora: sudo dnf install tmux\n  Arch: sudo pacman -S tmux".to_string(),
-            "zellij" => "Install zellij with your distro package manager if available, or use the upstream instructions: https://zellij.dev/documentation/installation".to_string(),
-            _ => format!("Install {package} with your distro package manager and make sure it is on PATH."),
+            "tmux" => linux_tmux_install_hint(),
+            "zellij" => linux_zellij_install_hint(),
+            _ => format!(
+                "Install {package} with your distro package manager and make sure it is on PATH."
+            ),
         }
     } else {
         format!("Install {package} and make sure it is on PATH.")
     }
+}
+
+fn linux_tmux_install_hint() -> String {
+    "Install tmux, then rerun rink. Examples:\n\n  Ubuntu/Debian:\n    sudo apt update\n    sudo apt install -y tmux\n\n  Fedora:\n    sudo dnf install tmux\n\n  Arch:\n    sudo pacman -S tmux"
+        .to_string()
+}
+
+fn linux_zellij_install_hint() -> String {
+    "Install zellij, then rerun rink. On Ubuntu/Debian, use the upstream prebuilt binary:\n\n  mkdir -p \"$HOME/.local/bin\"\n  tmp=$(mktemp -d)\n  arch=$(uname -m)\n  case \"$arch\" in\n    x86_64) zellij_target=\"x86_64-unknown-linux-musl\" ;;\n    aarch64|arm64) zellij_target=\"aarch64-unknown-linux-musl\" ;;\n    *) echo \"Unsupported zellij arch: $arch\" >&2; exit 1 ;;\n  esac\n  zellij_tag=$(curl -fsSL https://api.github.com/repos/zellij-org/zellij/releases/latest | grep '\"tag_name\"' | sed 's/.*: \"//;s/\".*//')\n  curl -fsSL \"https://github.com/zellij-org/zellij/releases/download/${zellij_tag}/zellij-${zellij_target}.tar.gz\" -o \"$tmp/zellij.tar.gz\"\n  tar -xzf \"$tmp/zellij.tar.gz\" -C \"$tmp\"\n  install -m 0755 \"$tmp/zellij\" \"$HOME/.local/bin/zellij\"\n  rm -rf \"$tmp\"\n\n  # If needed, add this to your shell profile:\n  export PATH=\"$HOME/.local/bin:$PATH\"\n\nOther options:\n  cargo install --locked zellij\n  See: https://zellij.dev/documentation/installation"
+        .to_string()
 }
 
 fn ensure_dependency(

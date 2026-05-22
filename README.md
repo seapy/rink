@@ -35,15 +35,41 @@ export PATH="$HOME/.local/bin:$PATH"
 
 On macOS, missing dependencies are auto-installed via Homebrew on first run.
 
-On Linux servers, install dependencies with your distro package manager or from upstream releases before running rink. For example:
+On Ubuntu/Debian Linux servers, install `tmux` from apt and `zellij` from the upstream prebuilt binary:
 
 ```bash
-# Ubuntu/Debian
 sudo apt update
-sudo apt install tmux
+sudo apt install -y tmux curl tar
 
-# Install zellij if your distro provides it; otherwise use upstream instructions:
-# https://zellij.dev/documentation/installation
+mkdir -p "$HOME/.local/bin"
+tmp=$(mktemp -d)
+arch=$(uname -m)
+case "$arch" in
+  x86_64) zellij_target="x86_64-unknown-linux-musl" ;;
+  aarch64|arm64) zellij_target="aarch64-unknown-linux-musl" ;;
+  *) echo "Unsupported zellij arch: $arch" >&2; exit 1 ;;
+esac
+zellij_tag=$(curl -fsSL https://api.github.com/repos/zellij-org/zellij/releases/latest | grep '"tag_name"' | sed 's/.*: "//;s/".*//')
+curl -fsSL "https://github.com/zellij-org/zellij/releases/download/${zellij_tag}/zellij-${zellij_target}.tar.gz" -o "$tmp/zellij.tar.gz"
+tar -xzf "$tmp/zellij.tar.gz" -C "$tmp"
+install -m 0755 "$tmp/zellij" "$HOME/.local/bin/zellij"
+rm -rf "$tmp"
+
+# Add this to your shell profile if ~/.local/bin is not already on PATH:
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Other Linux options:
+
+```bash
+# Fedora
+sudo dnf install tmux zellij
+
+# Arch
+sudo pacman -S tmux zellij
+
+# If you already have Rust/Cargo
+cargo install --locked zellij
 ```
 
 If a pre-built binary is not available for your platform, build from source:
