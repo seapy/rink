@@ -91,7 +91,7 @@ fn doctor_reset_dry_run_lists_runtime_state_without_deleting_it() {
 }
 
 #[test]
-fn doctor_reset_uses_xdg_runtime_dir_when_no_runtime_override_is_set() {
+fn doctor_reset_ignores_xdg_runtime_dir_when_no_runtime_override_is_set() {
     let home = TempDir::new().expect("temp home");
     let xdg_data = home.path().join("data");
     let xdg_runtime = home.path().join("runtime");
@@ -111,8 +111,12 @@ fn doctor_reset_uses_xdg_runtime_dir_when_no_runtime_override_is_set() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains(&xdg_runtime.join("rink/client_tty").display().to_string()),
+        stdout.contains("/tmp/rink/client_tty"),
         "stdout was: {stdout}"
+    );
+    assert!(
+        !stdout.contains(&xdg_runtime.join("rink/client_tty").display().to_string()),
+        "stdout should not use XDG_RUNTIME_DIR: {stdout}"
     );
 }
 

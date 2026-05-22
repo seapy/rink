@@ -69,7 +69,7 @@ rink --standalone
 
 ## Runtime files
 
-Transient files such as the right-pane tty and Claude Code status markers are stored under `$XDG_RUNTIME_DIR/rink` on Linux when available, otherwise `/tmp/rink`. Set `RINK_RUNTIME_DIR` to override the parent directory.
+Transient files such as the right-pane tty and Claude Code status markers are stored in `/tmp/rink` by default. Set `RINK_RUNTIME_DIR` to override the parent directory for tests or unusual environments.
 
 If the left dashboard/sidebar is missing, first check whether `rink` was launched from inside an existing zellij pane. Plain `rink` is the split-frame launcher; inside zellij, use `rink --standalone` for dashboard-only mode or run plain `rink` from a shell outside zellij to create the left/right frame.
 

@@ -7,7 +7,6 @@ pub const TMUX_SESSION_NAME: &str = "_rink_default";
 pub fn runtime_dir() -> PathBuf {
     std::env::var_os("RINK_RUNTIME_DIR")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("rink")
 }
