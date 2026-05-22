@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
+const STATUS_DIR: &str = "/tmp/rink";
 const STATUS_EXPIRY_SECS: u64 = 600;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,11 +32,11 @@ impl ClaudeStatus {
     }
 }
 
-/// Read all Claude status files from rink's per-user runtime directory.
+/// Read all Claude status files from /tmp/rink/.
 /// Returns a map of session_name -> ClaudeStatus
 pub fn read_all_statuses() -> HashMap<String, ClaudeStatus> {
     let mut statuses = HashMap::new();
-    let dir = crate::runtime::runtime_dir();
+    let dir = PathBuf::from(STATUS_DIR);
 
     if !dir.exists() {
         return statuses;
@@ -79,7 +81,7 @@ pub fn read_all_statuses() -> HashMap<String, ClaudeStatus> {
 
 /// Write a status file for a session
 pub fn write_status(session_name: &str, status: &str) {
-    let dir = crate::runtime::runtime_dir();
+    let dir = PathBuf::from(STATUS_DIR);
     let _ = std::fs::create_dir_all(&dir);
     let path = dir.join(session_name);
     let _ = std::fs::write(path, status);

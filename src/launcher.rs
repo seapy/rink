@@ -4,7 +4,7 @@ const ZELLIJ_SESSION_NAME: &str = "_rink_dash";
 
 /// Path to the file where the right pane's tty is stored.
 pub fn client_tty_path() -> PathBuf {
-    crate::runtime::runtime_dir().join("client_tty")
+    PathBuf::from("/tmp/rink/client_tty")
 }
 
 fn shell_quote(value: &str) -> String {
@@ -17,12 +17,10 @@ fn kdl_string(value: &str) -> String {
 
 /// Generate a KDL layout for zellij with rink TUI on the left and tmux on the right.
 pub fn generate_kdl_layout(rink_binary: &str) -> String {
-    let runtime_dir = crate::runtime::runtime_dir();
     let tty_path = client_tty_path();
-    let runtime_dir_arg = shell_quote(&runtime_dir.to_string_lossy());
     let tty_path_arg = shell_quote(&tty_path.to_string_lossy());
     let shell_command = format!(
-        "mkdir -p {runtime_dir_arg} && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
+        "mkdir -p /tmp/rink && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
     );
     format!(
         r#"layout {{

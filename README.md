@@ -68,13 +68,7 @@ rink --standalone
 
 ## Runtime files
 
-Transient files such as the right-pane tty and Claude Code status markers are stored in a per-user runtime directory:
-
-- `$RINK_RUNTIME_DIR/rink` when `RINK_RUNTIME_DIR` is set
-- `$XDG_RUNTIME_DIR/rink` on Linux sessions that provide it
-- `/tmp/rink-$USER` as a fallback
-
-This avoids permission conflicts on shared Linux servers where a global `/tmp/rink` directory could be owned by another user.
+Transient files such as the right-pane tty and Claude Code status markers are stored in `/tmp/rink`.
 
 ## Keybindings
 

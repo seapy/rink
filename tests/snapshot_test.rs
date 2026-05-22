@@ -5,10 +5,8 @@ use rink::command::Command;
 use rink::config::Config;
 use rink::sort::SortMode;
 use rink::state::PersistentState;
+use rink::status::ClaudeStatus;
 use rink::tmux::{FakeTmuxClient, Session};
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-static TEST_RUNTIME_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 fn make_sessions() -> Vec<Session> {
     vec![
@@ -58,21 +56,13 @@ fn make_sessions() -> Vec<Session> {
 }
 
 fn setup_app(sessions: Vec<Session>) -> (App, FakeTmuxClient) {
-    let runtime_base = std::env::temp_dir().join(format!(
-        "rink-test-{}-{}",
-        std::process::id(),
-        TEST_RUNTIME_COUNTER.fetch_add(1, Ordering::SeqCst)
-    ));
-    let runtime_dir = runtime_base.join("rink");
-    std::fs::create_dir_all(&runtime_dir).unwrap();
-    std::fs::write(runtime_dir.join("dummy-status"), "working").unwrap();
-    std::env::set_var("RINK_RUNTIME_DIR", &runtime_base);
-
     let config = Config::default();
     let state = PersistentState::default();
     let mut app = App::with_state(config, true, state);
     let client = FakeTmuxClient::new(sessions);
     app.refresh_sessions(&client);
+    app.claude_statuses
+        .insert("dummy-status".to_string(), ClaudeStatus::Working);
     (app, client)
 }
 
