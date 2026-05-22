@@ -20,11 +20,13 @@ pub fn generate_kdl_layout(rink_binary: &str) -> String {
     let tty_path = client_tty_path();
     let tty_path_arg = shell_quote(&tty_path.to_string_lossy());
     let rink_binary_arg = shell_quote(rink_binary);
+    let terminal_env =
+        "if [ -z \"${TERM:-}\" ] || [ \"$TERM\" = dumb ]; then export TERM=xterm-256color; fi";
     let left_shell_command = format!(
-        "{rink_binary_arg} --inside; status=$?; printf '\\n'; printf 'rink --inside exited with status %s. Press Enter to close this pane.' \"$status\"; read _"
+        "{terminal_env}; {rink_binary_arg} --inside; status=$?; printf '\\n'; printf 'rink --inside exited with status %s. Press Enter to close this pane.' \"$status\"; read _"
     );
     let right_shell_command = format!(
-        "mkdir -p /tmp/rink && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
+        "{terminal_env}; mkdir -p /tmp/rink && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
     );
     format!(
         r#"layout {{

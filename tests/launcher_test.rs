@@ -17,6 +17,26 @@ fn left_pane_runs_rink_inside_through_shell_and_keeps_errors_visible() {
         layout.contains("/tmp/rink binary/rink"),
         "layout was: {layout}"
     );
+    assert!(
+        layout.contains("export TERM=xterm-256color"),
+        "layout was: {layout}"
+    );
+}
+
+#[test]
+fn right_pane_sets_safe_term_before_running_tmux() {
+    let layout = generate_kdl_layout("/tmp/rink");
+
+    let term_fix = "if [ -z \\\"${TERM:-}\\\" ] || [ \\\"$TERM\\\" = dumb ]; then export TERM=xterm-256color; fi";
+    assert!(layout.contains(term_fix), "layout was: {layout}");
+    assert!(
+        layout.contains("exec tmux new-session -A -s _rink_default"),
+        "layout was: {layout}"
+    );
+    assert!(
+        layout.find(term_fix).unwrap() < layout.find("exec tmux new-session").unwrap(),
+        "TERM fallback must run before tmux: {layout}"
+    );
 }
 
 #[test]
