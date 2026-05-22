@@ -19,7 +19,11 @@ fn kdl_string(value: &str) -> String {
 pub fn generate_kdl_layout(rink_binary: &str) -> String {
     let tty_path = client_tty_path();
     let tty_path_arg = shell_quote(&tty_path.to_string_lossy());
-    let shell_command = format!(
+    let rink_binary_arg = shell_quote(rink_binary);
+    let left_shell_command = format!(
+        "{rink_binary_arg} --inside; status=$?; printf '\\n'; printf 'rink --inside exited with status %s. Press Enter to close this pane.' \"$status\"; read _"
+    );
+    let right_shell_command = format!(
         "mkdir -p /tmp/rink && tty > {tty_path_arg} && exec tmux new-session -A -s _rink_default"
     );
     format!(
@@ -27,20 +31,20 @@ pub fn generate_kdl_layout(rink_binary: &str) -> String {
     tab {{
         pane split_direction="vertical" {{
             pane size="35%" name="sessions" {{
-                command "{}"
-                args "--inside"
+                command "sh"
+                args "-lc" "{}"
             }}
             pane size="65%" {{
                 command "sh"
-                args "-c" "{}"
+                args "-lc" "{}"
             }}
         }}
     }}
 }}
 
 "#,
-        kdl_string(rink_binary),
-        kdl_string(&shell_command)
+        kdl_string(&left_shell_command),
+        kdl_string(&right_shell_command)
     )
 }
 
@@ -101,28 +105,20 @@ fn session_is_alive() -> bool {
     }
 }
 
-/// Kill any dead/exited zellij session with our name
-fn kill_dead_session() {
+fn kill_session() {
     let _ = std::process::Command::new("zellij")
-        .args(["delete-session", ZELLIJ_SESSION_NAME])
+        .args(["delete-session", "--force", ZELLIJ_SESSION_NAME])
         .output();
 }
 
-/// Launch zellij with the rink layout, or attach to existing session
+/// Launch zellij with the rink layout.
 pub fn launch_zellij() -> Result<(), String> {
+    // The zellij session is only the outer frame; tmux keeps the actual work
+    // session alive. Recreate the frame each time so stale/broken layouts from
+    // older rink versions do not leave users in a blank zellij session.
     if session_is_alive() {
-        let status = std::process::Command::new("zellij")
-            .args(["attach", ZELLIJ_SESSION_NAME])
-            .status()
-            .map_err(|e| format!("Failed to attach to zellij session: {}", e))?;
-
-        if status.success() {
-            return Ok(());
-        }
+        kill_session();
     }
-
-    // Clean up dead session if any, then create new
-    kill_dead_session();
 
     let layout = write_layout()?;
     let config = write_zellij_config()?;
