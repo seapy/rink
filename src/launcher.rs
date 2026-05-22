@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const ZELLIJ_SESSION_NAME: &str = "_rink_dash";
 
@@ -111,6 +111,18 @@ fn kill_session() {
         .output();
 }
 
+/// Arguments used to start zellij with rink's layout.
+pub fn zellij_launch_args(config: &Path, layout: &Path) -> Vec<String> {
+    vec![
+        "--session".to_string(),
+        ZELLIJ_SESSION_NAME.to_string(),
+        "--config".to_string(),
+        config.to_string_lossy().to_string(),
+        "--new-session-with-layout".to_string(),
+        layout.to_string_lossy().to_string(),
+    ]
+}
+
 /// Launch zellij with the rink layout.
 pub fn launch_zellij() -> Result<(), String> {
     // The zellij session is only the outer frame; tmux keeps the actual work
@@ -123,15 +135,9 @@ pub fn launch_zellij() -> Result<(), String> {
     let layout = write_layout()?;
     let config = write_zellij_config()?;
 
+    let args = zellij_launch_args(&config, &layout);
     let status = std::process::Command::new("zellij")
-        .args([
-            "-s",
-            ZELLIJ_SESSION_NAME,
-            "-c",
-            &config.to_string_lossy(),
-            "-n",
-            &layout.to_string_lossy(),
-        ])
+        .args(&args)
         .status()
         .map_err(|e| format!("Failed to launch zellij: {}", e))?;
 
